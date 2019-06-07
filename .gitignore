@@ -1,0 +1,4 @@
+.stack-work/
+allthenet.cabal
+scanlog.jsonl
+*.png
