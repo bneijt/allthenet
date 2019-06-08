@@ -27,25 +27,29 @@ import Data.Aeson.IP
 connectToHost :: IPv4 -> PortNumber -> IO Bool
 connectToHost address port = withSocketsDo $ do
     addr <- resolve host (show port)
-    bracket (open addr) close (\_ -> return True)
+    bracket (openSocket addr) closeSocket tryConnectingSocket
     where
         host = show address
         resolve host port = do
             let hints = defaultHints { addrSocketType = Stream }
             addr:_ <- getAddrInfo (Just hints) (Just host) (Just port)
             return addr
-        open addr = do
-            sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
-            connect sock $ addrAddress addr
-            return sock
+        closeSocket (sock, _) = close sock
+        tryConnectingSocket (sock, addr) = do
+            connectAttempt <- timeout 1000000 $ connect sock $ addrAddress addr
+            case connectAttempt of
+                Just _ -> return True
+                Nothing -> return False
+        openSocket addr = do
+            s <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+            return (s, addr)
 
 isPortOpen :: IPv4 -> PortNumber -> IO Bool
 isPortOpen addr port = do
-    result <- try $ timeout 1000000 $ connectToHost addr port :: IO (Either SomeException (Maybe Bool))
+    result <- try $ connectToHost addr port :: IO (Either SomeException Bool)
     case result of
         Left _ -> return False
-        Right Nothing -> return False
-        Right (Just _) -> return True
+        Right result -> return result
 
 check :: IPv4 -> IO CheckResult
 check addr = do
