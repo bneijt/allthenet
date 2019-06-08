@@ -11,9 +11,7 @@ module Lib
     allPublicAddresses
     ) where
 import Data.Algorithm.Hilbert
--- import Data.Bits
 import Data.Maybe
--- import Network.Socket
 import Graphics.Rasterific (Point, V2(..))
 import Codec.Picture(PixelRGBA8(..))
 import Check

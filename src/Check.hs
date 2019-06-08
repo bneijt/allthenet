@@ -15,14 +15,7 @@ import Data.Maybe
 import qualified Data.ByteString.Lazy as BS
 import Data.IP
 import Data.Aeson.IP
--- colorHost :: String -> IO PixelRGBA8
--- colorHost ip = do
---     hasHttp <- isPortOpen ip 80
---     hasHttps <- isPortOpen ip 443
---     return $ PixelRGBA8 (if hasHttp then 255 else 0) (if hasHttps then 255 else 0) 0 255
---
--- data Host = HostAddress
---     deriving (Show)
+import Control.Concurrent.Async
 
 connectToHost :: IPv4 -> PortNumber -> IO Bool
 connectToHost address port = withSocketsDo $ do
@@ -54,8 +47,7 @@ isPortOpen addr port = do
 check :: IPv4 -> IO CheckResult
 check addr = do
     now <- getZonedTime
-    hasHttp <- isPortOpen addr 80
-    hasHttps <- isPortOpen addr 443
+    (hasHttp, hasHttps) <- concurrently (isPortOpen addr 80) (isPortOpen addr 443)
     return CheckResult {
         address = addr,
         hasHttp = hasHttp,
@@ -79,9 +71,3 @@ instance ToJSON CheckResult where
     toEncoding = genericToEncoding defaultOptions
 
 instance FromJSON CheckResult
-
-
-
-
--- instance ToJSON Host where
---     toJSON = toValue showHostAddress
