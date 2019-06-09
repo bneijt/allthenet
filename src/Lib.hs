@@ -8,7 +8,8 @@ module Lib
     draw,
     scanDraw,
     testNet,
-    allPublicAddresses
+    allPublicAddresses,
+    createZoomLevels
     ) where
 import Data.Algorithm.Hilbert
 import Data.Maybe
@@ -25,9 +26,12 @@ import System.IO
 import Conduit
 import qualified Data.Conduit.List as CL
 import Control.Concurrent.Async (mapConcurrently)
+import Data.List.Split (chunksOf)
 
-testNet = [toIPv4 [192,168,0, b] |
-    b <- [0..255]]
+testNet = [toIPv4 [192,168,a, b] |
+    a <- [0..255],
+    b <- [0..255]
+    ]
 
 allAddresses :: [IPv4]
 allAddresses = [toIPv4 [a, b, c, d] |
@@ -81,11 +85,11 @@ runCheck = mapAsync 500 check
 encodeCheck :: ConduitT CheckResult B.ByteString IO ()
 encodeCheck = mapC $ \result -> B.append (L.toStrict (encode result)) "\n"
 
-hostAddressToList :: IPv4 -> [Integer]
+hostAddressToList :: IPv4 -> [Int]
 hostAddressToList hostAddress = map fromIntegral (fromIPv4 hostAddress)
 
-addressToIndex :: IPv4 -> Integer
-addressToIndex = sum . map (\(n,o) -> toInteger o * 256 ^ n) . zip [0..] . reverse . hostAddressToList
+addressToIndex :: IPv4 -> Int
+addressToIndex = sum . map (\(n,o) -> o * 256 ^ n) . zip [0..] . reverse . hostAddressToList
 
 loadCheckResults :: Handle -> IO [CheckResult]
 loadCheckResults handle = do
@@ -121,3 +125,14 @@ mapAsync :: Int -> (a -> IO b) -> ConduitT a b IO ()
 mapAsync n op = CL.chunksOf n .| mapAsynced .| CL.concat
     where
         mapAsynced = mapMC (mapConcurrently op)
+
+createZoomLevel :: Int -> IO()
+createZoomLevel newZoom = mapM_ (\(outPos, [a,b,c,d]) -> mergeTilesAt oldZoom a b c d outPos) mapping
+    where
+        oldZoom = newZoom + 1
+        newTiles = [(x, y) | y <- [0..2^newZoom -1], x <- [0..2^newZoom - 1]]
+        oldTilesFor (oldX, oldY) = [(x, y) | y <- take 2 [2*oldY..], x <- take 2 [2*oldX..]]
+        mapping = zip newTiles (map oldTilesFor newTiles)
+
+createZoomLevels :: IO()
+createZoomLevels = mapM_ createZoomLevel [6,5..0]

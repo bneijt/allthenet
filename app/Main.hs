@@ -8,8 +8,9 @@ import Control.Monad
 import Data.IP
 
 data Configuration = Configuration {
-        shouldScan      :: Bool,
-        shouldDraw      :: Bool
+        shouldScan :: Bool,
+        shouldDraw :: Bool,
+        shouldZoom :: Bool
     }
 
 sample :: Parser Configuration
@@ -20,19 +21,23 @@ sample = Configuration
     <*>  switch
         ( long "draw"
         <> help "Wether to draw the scanlog.jsonl file" )
+    <*>  switch
+        ( long "zoom"
+        <> help "Create different zoom levels from all generated tiles in zoom level 8" )
 
 main :: IO ()
 main = greet =<< execParser opts
     where
         opts = info (sample <**> helper)
-            ( fullDesc <> progDesc "Draw activet hosts on the network" <> header "allthenet - draw a network map" )
+            ( fullDesc <> progDesc "Draw active hosts on the network" <> header "allthenet - draw an ip sattelite image" )
 
 
 greet :: Configuration -> IO ()
-greet (Configuration shouldScan shouldDraw) =
+greet (Configuration shouldScan shouldDraw shouldZoom) = do
     if shouldScan && shouldDraw
         then
             scanDraw allPublicAddresses
         else do
             when shouldScan $ scan "scanlog.jsonl" allPublicAddresses
             when shouldDraw $ draw "scanlog.jsonl"
+    when shouldZoom  createZoomLevels

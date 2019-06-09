@@ -1,6 +1,8 @@
 # allthenet
 
-Do http://maps.measurement-factory.com/ but in Haskell, which in turn was inspired by [xkcd 195](https://xkcd.com/195/).
+[![CircleCI](https://circleci.com/gh/bneijt/ingcsv2hledger.svg?style=svg)](https://circleci.com/gh/bneijt/ingcsv2hledger)
+
+Create an [IPv4 map](http://maps.measurement-factory.com/), which in turn was inspired by [xkcd 195](https://xkcd.com/195/), but in Haskell.
 
 #See also
 
