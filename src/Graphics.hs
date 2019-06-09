@@ -3,7 +3,8 @@ module Graphics (
     writeImages,
     imageSink,
     indexToLocationColor,
-    mergeTilesAt
+    mergeTilesAt,
+    createTileDirectory
 )
 where
 import Check(CheckResult(..))
@@ -23,6 +24,9 @@ import System.Directory(createDirectoryIfMissing)
 -- |Size of the tiles used, tiles are always considered square in pixels. Because we want to map 2^16 by 2^16 we need zoomlevel 7 which is 128x128 tiles
 tileSize :: Int
 tileSize = 512
+
+defaultZoomLevel :: Int
+defaultZoomLevel = 7
 
 write :: String -> [(Point, PixelRGBA8)] -> IO ()
 write name points = do
@@ -59,11 +63,11 @@ tileName zoom (x, y) = "map/tiles/" ++ show zoom ++ "/" ++ show x ++ "_" ++ show
 
 writeLocationBatch :: [LocationColor] -> IO ()
 writeLocationBatch locations = do
-    createDirectoryIfMissing True "map/tiles/8"
+    createTileDirectory defaultZoomLevel
     write outputPath $ map (\x -> (pixelPosition x, color x)) locations
     where
         firstLocation = head locations
-        outputPath = tileName 7 (tileX firstLocation, tileY firstLocation)
+        outputPath = tileName defaultZoomLevel (tileX firstLocation, tileY firstLocation)
 
 sameTile :: LocationColor -> LocationColor -> Bool
 sameTile a b = tileX a == tileX b && tileY a == tileY b
@@ -85,10 +89,12 @@ writeImages locations = mapM_ writeLocationBatch batchedLocations
     where
         batchedLocations = groupBy sameTile locations :: [[LocationColor]]
 
+createTileDirectory :: Int -> IO ()
+createTileDirectory zoomlevel = createDirectoryIfMissing True $ "map/tiles/" ++ show zoomlevel
+
 mergeTilesAt :: Int -> (Int, Int) -> (Int, Int) -> (Int, Int) -> (Int, Int) -> (Int, Int) -> IO()
 mergeTilesAt zoom a b c d output = do
-    putStrLn $ "zoom " ++ show zoom ++ "," ++ show a ++ "," ++ show b ++ "," ++ show c ++ "," ++ show d ++ " -> " ++ show output
-    createDirectoryIfMissing True $ "map/tiles/" ++ show (zoom - 1)
+    putStrLn $ "from zoom " ++ show zoom ++ "; tiles" ++ show a ++ "," ++ show b ++ "," ++ show c ++ "," ++ show d ++ " -> " ++ show output
     mergeTiles (tileName zoom a) (tileName zoom b) (tileName zoom c) (tileName zoom d) (tileName (zoom - 1) output)
 
 -- |Merge tiles a b c and d into a single tile at output

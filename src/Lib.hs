@@ -80,7 +80,7 @@ scan logPath addresses =
 
 -- |Scan the given host and append the result to the given path
 runCheck :: ConduitT IPv4 CheckResult IO () -- converts Ints into Strings
-runCheck = mapAsync 500 check
+runCheck = mapAsync 5000 check
 
 encodeCheck :: ConduitT CheckResult B.ByteString IO ()
 encodeCheck = mapC $ \result -> B.append (L.toStrict (encode result)) "\n"
@@ -127,12 +127,14 @@ mapAsync n op = CL.chunksOf n .| mapAsynced .| CL.concat
         mapAsynced = mapMC (mapConcurrently op)
 
 createZoomLevel :: Int -> IO()
-createZoomLevel newZoom = mapM_ (\(outPos, [a,b,c,d]) -> mergeTilesAt oldZoom a b c d outPos) mapping
-    where
-        oldZoom = newZoom + 1
-        newTiles = [(x, y) | y <- [0..2^newZoom -1], x <- [0..2^newZoom - 1]]
-        oldTilesFor (oldX, oldY) = [(x, y) | y <- take 2 [2*oldY..], x <- take 2 [2*oldX..]]
-        mapping = zip newTiles (map oldTilesFor newTiles)
+createZoomLevel newZoom = do
+    createTileDirectory newZoom
+    mapM_ (\(outPos, [a,b,c,d]) -> mergeTilesAt oldZoom a b c d outPos) mapping
+        where
+            oldZoom = newZoom + 1
+            newTiles = [(x, y) | y <- [0..2^newZoom -1], x <- [0..2^newZoom - 1]]
+            oldTilesFor (oldX, oldY) = [(x, y) | y <- take 2 [2*oldY..], x <- take 2 [2*oldX..]]
+            mapping = zip newTiles (map oldTilesFor newTiles)
 
 createZoomLevels :: IO()
 createZoomLevels = mapM_ createZoomLevel [6,5..0]
