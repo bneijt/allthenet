@@ -101,9 +101,9 @@ mergeTilesAt zoom a b c d output = do
 mergeTiles :: FilePath -> FilePath -> FilePath -> FilePath -> FilePath -> IO ()
 mergeTiles a b c d output = do
     imgA <- readPng a
-    imgB <- readPng a
-    imgC <- readPng a
-    imgD <- readPng a
+    imgB <- readPng b
+    imgC <- readPng c
+    imgD <- readPng d
     let background = PixelRGBA8 0 0 0 0
         halfTileSize = (fromIntegral tileSize :: Float)  / 2
         img = renderDrawing tileSize tileSize background $ do

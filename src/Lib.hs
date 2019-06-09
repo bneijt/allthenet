@@ -25,7 +25,7 @@ import Data.Aeson
 import System.IO
 import Conduit
 import qualified Data.Conduit.List as CL
-import Control.Concurrent.Async (mapConcurrently)
+import Control.Concurrent.Async (mapConcurrently, mapConcurrently_)
 import Data.List.Split (chunksOf)
 
 testNet = [toIPv4 [192,168,a, b] |
@@ -126,10 +126,16 @@ mapAsync n op = CL.chunksOf n .| mapAsynced .| CL.concat
     where
         mapAsynced = mapMC (mapConcurrently op)
 
+batchedMapConcurrently_ :: (a -> IO b) -> [a] -> IO ()
+batchedMapConcurrently_ op l = mapM_ perBatch lChunks
+    where
+        lChunks = chunksOf 8 l
+        perBatch = mapConcurrently_ op
+
 createZoomLevel :: Int -> IO()
 createZoomLevel newZoom = do
     createTileDirectory newZoom
-    mapM_ (\(outPos, [a,b,c,d]) -> mergeTilesAt oldZoom a b c d outPos) mapping
+    batchedMapConcurrently_ (\(outPos, [a,b,c,d]) -> mergeTilesAt oldZoom a b c d outPos) mapping
         where
             oldZoom = newZoom + 1
             newTiles = [(x, y) | y <- [0..2^newZoom -1], x <- [0..2^newZoom - 1]]
