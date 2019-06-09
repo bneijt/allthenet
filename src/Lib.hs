@@ -23,7 +23,8 @@ import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Aeson
 import System.IO
 import Conduit
-import Data.Conduit.ConcurrentMap
+import qualified Data.Conduit.List as CL
+import Control.Concurrent.Async (mapConcurrently)
 
 testNet = [toIPv4 [192,168,0, b] |
     b <- [0..255]]
@@ -75,11 +76,7 @@ scan logPath addresses =
 
 -- |Scan the given host and append the result to the given path
 runCheck :: ConduitT IPv4 CheckResult IO () -- converts Ints into Strings
-runCheck = mapMC check
-
--- |TODO Run the check in parallell
--- runCheckMP :: ConduitT IPv4 CheckResult IO ()
--- runCheckMP = concurrentMapM_ 4 40 check
+runCheck = mapAsync 500 check
 
 encodeCheck :: ConduitT CheckResult B.ByteString IO ()
 encodeCheck = mapC $ \result -> B.append (L.toStrict (encode result)) "\n"
@@ -118,3 +115,9 @@ draw logPath =
     withFile logPath ReadMode $ \handle -> do
         checkResults <- loadCheckResults handle
         writeImages $ map checkResultToLocation checkResults
+
+-- | Map `a` asynchronously to `b` using batches of at most `n` elements
+mapAsync :: Int -> (a -> IO b) -> ConduitT a b IO ()
+mapAsync n op = CL.chunksOf n .| mapAsynced .| CL.concat
+    where
+        mapAsynced = mapMC (mapConcurrently op)
