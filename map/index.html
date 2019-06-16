@@ -9,13 +9,14 @@
 
 </head>
 <body>
-<div id="mapid" style="width: 100%; height: 400px; background-color: silver; color: black"></div>
+<div id="mapid" style="width: 100%; height: 600px; background-color: silver; color: black"></div>
 <script>
 
 OpenSeadragon({
     id:        "mapid",
     prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.0/images/",
     navigatorSizeRatio: 0.25,
+    maxZoomPixelRatio: 30,
     tileSources:   {
         height: 512*128,
         width:  512*128,

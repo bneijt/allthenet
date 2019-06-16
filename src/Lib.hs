@@ -27,6 +27,7 @@ import Conduit
 import qualified Data.Conduit.List as CL
 import Control.Concurrent.Async (mapConcurrently, mapConcurrently_)
 import Data.List.Split (chunksOf)
+import Data.Conduit.Async
 
 testNet = [toIPv4 [192,168,a, b] |
     a <- [0..255],
@@ -80,7 +81,7 @@ scan logPath addresses =
 
 -- |Scan the given host and append the result to the given path
 runCheck :: ConduitT IPv4 CheckResult IO () -- converts Ints into Strings
-runCheck = mapAsync 5000 check
+runCheck = mapAsync 1000 check
 
 encodeCheck :: ConduitT CheckResult B.ByteString IO ()
 encodeCheck = mapC $ \result -> B.append (L.toStrict (encode result)) "\n"
@@ -119,12 +120,6 @@ draw logPath =
     withFile logPath ReadMode $ \handle -> do
         checkResults <- loadCheckResults handle
         writeImages $ map checkResultToLocation checkResults
-
--- | Map `a` asynchronously to `b` using batches of at most `n` elements
-mapAsync :: Int -> (a -> IO b) -> ConduitT a b IO ()
-mapAsync n op = CL.chunksOf n .| mapAsynced .| CL.concat
-    where
-        mapAsynced = mapMC (mapConcurrently op)
 
 batchedMapConcurrently_ :: (a -> IO b) -> [a] -> IO ()
 batchedMapConcurrently_ op l = mapM_ perBatch lChunks

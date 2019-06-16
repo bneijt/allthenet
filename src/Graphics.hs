@@ -9,7 +9,7 @@ module Graphics (
 where
 import Check(CheckResult(..))
 import Data.Algorithm.Hilbert
-
+import Control.Arrow ((&&&))
 import Control.Monad
 import Codec.Picture(PixelRGBA8(..), writePng, readPng, convertRGBA8)
 import Graphics.Rasterific
@@ -32,8 +32,8 @@ write :: String -> [(Point, PixelRGBA8)] -> IO ()
 write name points = do
   let background = PixelRGBA8 0 0 0 0
       img = renderDrawing tileSize tileSize background $
-        forM_ points $ \x ->
-            withTexture (uniformTexture (snd x)) $ fill $ rectangle (fst x) 1 1
+        forM_ points $ \p ->
+            withTexture (uniformTexture (snd p)) $ fill $ rectangle (fst p) 1 1
   writePng name img
 
 -- |Data constructor combining the location and color or a point on the map, including the tile location
@@ -64,7 +64,7 @@ tileName zoom (x, y) = "map/tiles/" ++ show zoom ++ "/" ++ show x ++ "_" ++ show
 writeLocationBatch :: [LocationColor] -> IO ()
 writeLocationBatch locations = do
     createTileDirectory defaultZoomLevel
-    write outputPath $ map (\x -> (pixelPosition x, color x)) locations
+    write outputPath $ map (pixelPosition &&& color) locations
     where
         firstLocation = head locations
         outputPath = tileName defaultZoomLevel (tileX firstLocation, tileY firstLocation)
