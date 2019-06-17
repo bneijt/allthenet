@@ -25,8 +25,6 @@ import Data.Aeson
 import System.IO
 import Conduit
 import qualified Data.Conduit.List as CL
-import Control.Concurrent.Async (mapConcurrently, mapConcurrently_)
-import Data.List.Split (chunksOf)
 import Data.Conduit.Async
 
 testNet = [toIPv4 [192,168,a, b] |
@@ -121,21 +119,16 @@ draw logPath =
         checkResults <- loadCheckResults handle
         writeImages $ map checkResultToLocation checkResults
 
-batchedMapConcurrently_ :: (a -> IO b) -> [a] -> IO ()
-batchedMapConcurrently_ op l = mapM_ perBatch lChunks
-    where
-        lChunks = chunksOf 8 l
-        perBatch = mapConcurrently_ op
-
 createZoomLevel :: Int -> IO()
 createZoomLevel newZoom = do
     createTileDirectory newZoom
-    batchedMapConcurrently_ (\(outPos, [a,b,c,d]) -> mergeTilesAt oldZoom a b c d outPos) mapping
-        where
-            oldZoom = newZoom + 1
-            newTiles = [(x, y) | y <- [0..2^newZoom -1], x <- [0..2^newZoom - 1]]
-            oldTilesFor (oldX, oldY) = [(x, y) | y <- take 2 [2*oldY..], x <- take 2 [2*oldX..]]
-            mapping = zip newTiles (map oldTilesFor newTiles)
+    runConduit $ yieldMany mapping .| mapAsync 20 op .| sinkNull
+    where
+        oldZoom = newZoom + 1
+        newTiles = [(x, y) | y <- [0..2^newZoom -1], x <- [0..2^newZoom - 1]]
+        oldTilesFor (oldX, oldY) = [(x, y) | y <- take 2 [2*oldY..], x <- take 2 [2*oldX..]]
+        mapping = zip newTiles (map oldTilesFor newTiles)
+        op (outPos, [a,b,c,d]) = mergeTilesAt oldZoom a b c d outPos
 
 createZoomLevels :: IO()
 createZoomLevels = mapM_ createZoomLevel [6,5..0]
