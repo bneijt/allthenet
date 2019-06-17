@@ -36,6 +36,7 @@ dependencies:
 - async
 - directory
 - split
+- conduit-async
 
 library:
   source-dirs: src

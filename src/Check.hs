@@ -15,7 +15,6 @@ import Data.Maybe
 import qualified Data.ByteString.Lazy as BS
 import Data.IP
 import Data.Aeson.IP
-import Control.Concurrent.Async
 
 connectToHost :: IPv4 -> PortNumber -> IO Bool
 connectToHost address port = withSocketsDo $ do
@@ -47,7 +46,8 @@ isPortOpen addr port = do
 check :: IPv4 -> IO CheckResult
 check addr = do
     now <- getZonedTime
-    (hasHttp, hasHttps) <- concurrently (isPortOpen addr 80) (isPortOpen addr 443)
+    hasHttp <- isPortOpen addr 80
+    hasHttps <- isPortOpen addr 443
     return CheckResult {
         address = addr,
         hasHttp = hasHttp,

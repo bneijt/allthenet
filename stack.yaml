@@ -43,6 +43,8 @@ extra-deps:
 - fractals-0.1.0.0@sha256:3b2326bdf52c429f3202b279e2d327bcc9b5943f17e7bc82431cac6b40366b1e
 - github: bneijt/hilbert
   commit: 3bff7dbb369963d8e841cdbb56964822c497e160
+- github: bneijt/conduit-async
+  commit: 4670d31fa269dd265ac408a09a5474b7235e7e6f
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
