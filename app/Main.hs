@@ -10,7 +10,8 @@ import Data.IP
 data Configuration = Configuration {
         shouldScan :: Bool,
         shouldDraw :: Bool,
-        shouldZoom :: Bool
+        shouldZoom :: Bool,
+        shouldPrintCoords :: Bool
     }
 
 sample :: Parser Configuration
@@ -24,6 +25,9 @@ sample = Configuration
     <*>  switch
         ( long "zoom"
         <> help "Create different zoom levels from all generated tiles in zoom level 8" )
+    <*>  switch
+        ( long "print-coords"
+        <> help "Print coordinates of the different network segments" )
 
 main :: IO ()
 main = greet =<< execParser opts
@@ -33,7 +37,8 @@ main = greet =<< execParser opts
 
 
 greet :: Configuration -> IO ()
-greet (Configuration shouldScan shouldDraw shouldZoom) = do
+greet (Configuration shouldScan shouldDraw shouldZoom shouldPrintCoords) = do
+    when shouldPrintCoords printCoords
     if shouldScan && shouldDraw
         then
             scanDraw allPublicAddresses

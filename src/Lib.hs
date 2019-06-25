@@ -9,9 +9,9 @@ module Lib
     scanDraw,
     testNet,
     allPublicAddresses,
-    createZoomLevels
+    createZoomLevels,
+    printCoords
     ) where
-import Data.Algorithm.Hilbert
 import Data.Maybe
 import Graphics.Rasterific (Point, V2(..))
 import Codec.Picture(PixelRGBA8(..))
@@ -61,6 +61,15 @@ blacklist = map (\x -> read x :: AddrRange IPv4) [
     "224.0.0.0/4", ---          Multicast                              [RFC3171]
     "240.0.0.0/4" --          Reserved for Future Use        [RFC1700, page 4]
     ]
+
+printCoordsNetwork :: AddrRange IPv4 -> IO()
+printCoordsNetwork mask =
+    putStrLn $ show addr ++ " == " ++ (show . indexToPoint . addressToIndex) addr
+    where
+        (addr, _) = addrRangePair mask
+
+printCoords :: IO()
+printCoords = mapM_ printCoordsNetwork blacklist
 
 isBlacklisted :: IPv4 -> Bool
 isBlacklisted addr = any (isMatchedTo addr) blacklist

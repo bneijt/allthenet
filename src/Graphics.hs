@@ -4,11 +4,12 @@ module Graphics (
     imageSink,
     indexToLocationColor,
     mergeTilesAt,
-    createTileDirectory
+    createTileDirectory,
+    indexToPoint
 )
 where
 import Check(CheckResult(..))
-import Data.Algorithm.Hilbert
+import qualified Data.Algorithm.Hilbert
 import Control.Arrow ((&&&))
 import Control.Monad
 import Codec.Picture(PixelRGBA8(..), writePng, readPng, convertRGBA8)
@@ -44,8 +45,8 @@ data LocationColor = LocationColor {
     color :: PixelRGBA8
 } deriving (Show)
 
-itp :: Int -> [Int]
-itp idx = fromJust $ indexToPoint 16 2 idx
+indexToPoint :: Int -> [Int]
+indexToPoint idx = reverse . fromJust $ Data.Algorithm.Hilbert.indexToPoint 16 2 idx
 
 indexToLocationColor :: Int -> CheckResult -> LocationColor
 indexToLocationColor index result = LocationColor {
@@ -55,7 +56,7 @@ indexToLocationColor index result = LocationColor {
         color = checkResultColor result
     }
     where
-        [x, y] = itp index
+        [x, y] = indexToPoint index
 
 tileName :: Int -> (Int, Int) -> String
 tileName zoom (x, y) = "map/tiles/" ++ show zoom ++ "/" ++ show x ++ "_" ++ show y ++ ".png"
